@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text.Json;
 using Godot;
 
-public partial class SettingsProfile
+public class SettingsProfile
 {
     #region Gameplay
 
@@ -373,7 +373,25 @@ public partial class SettingsProfile
     /// <summary>
     /// Import settings from previous (nightly) version
     /// </summary>
-    public SettingsItem<Variant> ImportNightlyProfile { get; private set; }
+    public SettingsItem<Variant> ImportNightlyProfile { get; private set; } = new(default)
+    {
+        Id = "ImportNightlyProfile",
+        Title = "Import Nightly Settings",
+        Description = "Imports settings from the nightly client",
+        Section = SettingsSection.Other,
+        Buttons =
+        [
+            new SettingsButton
+            {
+                Title = "Import", Description = "Automatically import settings from nightly", OnPressed = () =>
+                {
+                    if (Directory.Exists(Constants.NIGHTLY_FOLDER))
+                        ImportFromNightlySettings($"{Constants.NIGHTLY_FOLDER}/settings.json");
+                }
+            }
+        ],
+        SaveToDisk = false
+    };
 
     [Order]
     /// <summary>
@@ -425,50 +443,51 @@ public partial class SettingsProfile
     {
         #region Gameplay
 
-        Sensitivity = new(0.5f)
+        Sensitivity = new SettingsItem<double>(0.5f)
         {
             Id = "Sensitivity",
             Title = "Sensitivity",
             Description = "Adjusts cursor sensitivity",
             Section = SettingsSection.Gameplay,
-            Slider = new()
+            Slider = new SettingsSlider
             {
                 Step = 0.01f,
                 MinValue = 0.01f,
                 MaxValue = 2.5f
-            },
+            }
         };
 
-        AbsoluteSensitivity = new(1.0f)
+        AbsoluteSensitivity = new SettingsItem<double>(1.0f)
         {
             Id = "AbsoluteSensitivity",
             Title = "Absolute Sensitivity",
             Description = "Adjusts absolute area scale",
             Section = SettingsSection.Gameplay,
-            Slider = new()
+            Slider = new SettingsSlider
             {
                 Step = 0.01f,
                 MinValue = 0.01f,
                 MaxValue = 4.0f
-            },
+            }
         };
 
-        AbsoluteInput = new(false)
+        AbsoluteInput = new SettingsItem<bool>(false)
         {
             Id = "AbsoluteInput",
             Title = "Absolute Input",
             Description = "Toggles absolute inputs",
-            Section = SettingsSection.Gameplay,
+            Section = SettingsSection.Gameplay
         };
 
-        ApproachRate = new(30)
+        ApproachRate = new SettingsItem<double>(30)
         {
             Id = "ApproachRate",
             Title = "Approach Rate",
-            Description = "(AR) Approach rate of hit objects, adjusts how fast hit objects come to the playfield (bigger # = faster)",
+            Description =
+                "(AR) Approach rate of hit objects, adjusts how fast hit objects come to the playfield (bigger # = faster)",
             Section = SettingsSection.Gameplay,
             UpdateAction = (_, _) => updateApproachTime(),
-            Slider = new()
+            Slider = new SettingsSlider
             {
                 Step = 0.5f,
                 MinValue = 0.5f,
@@ -476,14 +495,15 @@ public partial class SettingsProfile
             }
         };
 
-        ApproachDistance = new(15)
+        ApproachDistance = new SettingsItem<double>(15)
         {
             Id = "ApproachDistance",
             Title = "Approach Distance",
-            Description = "(AD) Approach distance of hit objects, adjusts how far away hit objects spawn (bigger # = further)",
+            Description =
+                "(AD) Approach distance of hit objects, adjusts how far away hit objects spawn (bigger # = further)",
             Section = SettingsSection.Gameplay,
             UpdateAction = (_, _) => updateApproachTime(),
-            Slider = new()
+            Slider = new SettingsSlider
             {
                 Step = 0.5f,
                 MinValue = 0.5f,
@@ -491,7 +511,7 @@ public partial class SettingsProfile
             }
         };
 
-        ApproachTime = new(default)
+        ApproachTime = new SettingsItem<double>(0)
         {
             Id = "ApproachTime",
             Title = "Approach Time",
@@ -501,21 +521,22 @@ public partial class SettingsProfile
             SaveToDisk = false
         };
 
-        CursorDrift = new(true)
+        CursorDrift = new SettingsItem<bool>(true)
         {
             Id = "CursorDrift",
             Title = "Cursor Drift",
             Description = "Toggles cursor drift",
-            Section = SettingsSection.Gameplay,
+            Section = SettingsSection.Gameplay
         };
 
-        FadeIn = new(10)
+        FadeIn = new SettingsItem<double>(10)
         {
             Id = "FadeIn",
             Title = "Fade In",
-            Description = "Starting from when hit objects spawn in, the distance required to travel before becoming fully opaque",
+            Description =
+                "Starting from when hit objects spawn in, the distance required to travel before becoming fully opaque",
             Section = SettingsSection.Gameplay,
-            Slider = new()
+            Slider = new SettingsSlider
             {
                 Step = 1,
                 MinValue = 0,
@@ -523,13 +544,13 @@ public partial class SettingsProfile
             }
         };
 
-        FadeOut = new(75)
+        FadeOut = new SettingsItem<double>(75)
         {
             Id = "FadeOut",
             Title = "Fade Out",
             Description = "The transparency of hit objects when going past the playfield",
             Section = SettingsSection.Gameplay,
-            Slider = new()
+            Slider = new SettingsSlider
             {
                 Step = 1,
                 MinValue = 0,
@@ -537,21 +558,21 @@ public partial class SettingsProfile
             }
         };
 
-        Pushback = new(true)
+        Pushback = new SettingsItem<bool>(true)
         {
             Id = "Pushback",
             Title = "Pushback",
             Description = "Toggles whether hit objects are visible past the playfield or not",
-            Section = SettingsSection.Gameplay,
+            Section = SettingsSection.Gameplay
         };
 
-        CameraParallax = new(0.25f)
+        CameraParallax = new SettingsItem<double>(0.25f)
         {
             Id = "CameraParallax",
             Title = "Camera Parallax",
             Description = "Adjusts the camera parallax",
             Section = SettingsSection.Gameplay,
-            Slider = new()
+            Slider = new SettingsSlider
             {
                 Step = 0.05f,
                 MinValue = 0,
@@ -559,13 +580,13 @@ public partial class SettingsProfile
             }
         };
 
-        HUDParallax = new(0)
+        HUDParallax = new SettingsItem<double>(0)
         {
             Id = "HUDParallax",
             Title = "HUD Parallax",
             Description = "(Not implemented) Adjusts the HUD parallax",
             Section = SettingsSection.Gameplay,
-            Slider = new()
+            Slider = new SettingsSlider
             {
                 Step = 0.05f,
                 MinValue = 0,
@@ -581,17 +602,17 @@ public partial class SettingsProfile
         //     Section = SettingsSection.Gameplay,
         // };
 
-        FoV = new(70)
+        FoV = new SettingsItem<double>(70)
         {
             Id = "FoV",
             Title = "Field of View",
             Description = "Adjusts the field of view",
             Section = SettingsSection.Gameplay,
-            Slider = new()
+            Slider = new SettingsSlider
             {
                 Step = 1,
                 MinValue = 60,
-                MaxValue = 120,
+                MaxValue = 120
             }
         };
 
@@ -599,50 +620,74 @@ public partial class SettingsProfile
 
         #region Visual
 
-        Skin = new("default")
+        Skin = new SettingsItem<string>("default")
         {
             Id = "Skin",
             Title = "Skin",
             Description = "Selected skin for the game",
             Section = SettingsSection.Visual,
-            UpdateAction = (_, init) => { if (!init) { SkinManager.Load(); } },
+            UpdateAction = (_, init) =>
+            {
+                if (!init) SkinManager.Load();
+            },
             Buttons =
             [
-                new() { Title = "Skin Folder", Description = "Open the skin folder", OnPressed = () => { OS.ShellOpen($"{Constants.USER_FOLDER}/skins/{SettingsManager.Instance.Settings.Skin}"); } }
+                new SettingsButton
+                {
+                    Title = "Skin Folder", Description = "Open the skin folder",
+                    OnPressed = () =>
+                    {
+                        OS.ShellOpen($"{Constants.USER_FOLDER}/skins/{SettingsManager.Instance.Settings.Skin}");
+                    }
+                }
             ],
-            List = new("default")
+            List = new SettingsList<string>("default")
             {
                 Values = ["default"]
             }
         };
 
-        MenuSpace = new("skin")
+        MenuSpace = new SettingsItem<string>("skin")
         {
             Id = "MenuSpace",
             Title = "Menu Space",
             Description = "Overrides the skin's background space for the menu",
             Section = SettingsSection.Visual,
-            UpdateAction = (_, init) => { if (!init) { SkinManager.Load(); } },
-            List = new("skin")
+            UpdateAction = (_, init) =>
             {
-                Values = ["skin", "void", "grid", "squircles", "waves", "galaxy", "tunnel", "circulartunnel", "tritunnel", "vortex", "solid", "relic", "conspiracy"]
+                if (!init) SkinManager.Load();
+            },
+            List = new SettingsList<string>("skin")
+            {
+                Values =
+                [
+                    "skin", "void", "grid", "squircles", "waves", "galaxy", "tunnel", "circulartunnel", "tritunnel",
+                    "vortex", "solid", "relic", "conspiracy"
+                ]
             }
         };
 
-        GameSpace = new("skin")
+        GameSpace = new SettingsItem<string>("skin")
         {
             Id = "GameSpace",
             Title = "Game Space",
             Description = "Overrides the skin's background space for gameplay",
             Section = SettingsSection.Visual,
-            UpdateAction = (_, init) => { if (!init) { SkinManager.Load(); } },
-            List = new("skin")
+            UpdateAction = (_, init) =>
             {
-                Values = ["skin", "void", "grid", "squircles", "waves", "galaxy", "tunnel", "circulartunnel", "tritunnel", "vortex", "solid", "relic", "conspiracy"]
+                if (!init) SkinManager.Load();
+            },
+            List = new SettingsList<string>("skin")
+            {
+                Values =
+                [
+                    "skin", "void", "grid", "squircles", "waves", "galaxy", "tunnel", "circulartunnel", "tritunnel",
+                    "vortex", "solid", "relic", "conspiracy"
+                ]
             }
         };
 
-        SpaceHitEffects = new(true)
+        SpaceHitEffects = new SettingsItem<bool>(true)
         {
             Id = "SpaceHitEffects",
             Title = "Space Hit Effects",
@@ -650,7 +695,7 @@ public partial class SettingsProfile
             Section = SettingsSection.Visual
         };
 
-        SpaceEffects = new(true)
+        SpaceEffects = new SettingsItem<bool>(true)
         {
             Id = "SpaceEffects",
             Title = "Space Effects",
@@ -658,26 +703,29 @@ public partial class SettingsProfile
             Section = SettingsSection.Visual
         };
 
-        NoteColors = new("skin")
+        NoteColors = new SettingsItem<string>("skin")
         {
             Id = "Colors",
             Title = "Colors",
             Description = "Overrides the skin's colorset",
             Section = SettingsSection.Visual,
-            UpdateAction = (_, init) => { if (!init) { SkinManager.Load(); } },
-            List = new("skin")
+            UpdateAction = (_, init) =>
+            {
+                if (!init) SkinManager.Load();
+            },
+            List = new SettingsList<string>("skin")
             {
                 Values = ["skin", "default"]
             }
         };
 
-        NoteOpacity = new(1)
+        NoteOpacity = new SettingsItem<double>(1)
         {
             Id = "NoteOpacity",
             Title = "Note Opacity",
             Description = "Sets the maximum opacity for the notes",
             Section = SettingsSection.Visual,
-            Slider = new()
+            Slider = new SettingsSlider
             {
                 Step = 0.05f,
                 MinValue = 0,
@@ -685,13 +733,14 @@ public partial class SettingsProfile
             }
         };
 
-        NoteOpacityExponent = new(1.25)
+        NoteOpacityExponent = new SettingsItem<double>(1.25)
         {
             Id = "NoteOpacityExponent",
             Title = "Note Opacity Exponent",
-            Description = "Adjusts the note opacity curve, a higher value will make any sort of transparency appear more quickly",
+            Description =
+                "Adjusts the note opacity curve, a higher value will make any sort of transparency appear more quickly",
             Section = SettingsSection.Visual,
-            Slider = new()
+            Slider = new SettingsSlider
             {
                 Step = 0.05f,
                 MinValue = 1,
@@ -699,26 +748,29 @@ public partial class SettingsProfile
             }
         };
 
-        NoteMesh = new("skin")
+        NoteMesh = new SettingsItem<string>("skin")
         {
             Id = "NoteMesh",
             Title = "Note Mesh",
             Description = "Overrides the skin's note mesh",
             Section = SettingsSection.Visual,
-            UpdateAction = (_, init) => { if (!init) { SkinManager.Load(); } },
-            List = new("skin")
+            UpdateAction = (_, init) =>
+            {
+                if (!init) SkinManager.Load();
+            },
+            List = new SettingsList<string>("skin")
             {
                 Values = getAvailableMeshes()
             }
         };
 
-        NoteSize = new(0.875f)
+        NoteSize = new SettingsItem<double>(0.875f)
         {
             Id = "NoteSize",
             Title = "Note Size",
             Description = "Sets the size of the notes, does not change hitboxes",
             Section = SettingsSection.Visual,
-            Slider = new()
+            Slider = new SettingsSlider
             {
                 Step = 0.025f,
                 MinValue = 0,
@@ -726,21 +778,21 @@ public partial class SettingsProfile
             }
         };
 
-        GridGuides = new(true)
+        GridGuides = new SettingsItem<bool>(true)
         {
             Id = "GridGuides",
             Title = "Grid Guides",
             Description = "Enables grid guides",
-            Section = SettingsSection.Visual,
+            Section = SettingsSection.Visual
         };
 
-        CursorScale = new(1)
+        CursorScale = new SettingsItem<double>(1)
         {
             Id = "CursorScale",
             Title = "Cursor Scale",
             Description = "Adjusts the cursor scale, does not change hitboxes",
             Section = SettingsSection.Visual,
-            Slider = new()
+            Slider = new SettingsSlider
             {
                 Step = 0.025f,
                 MinValue = 0,
@@ -748,13 +800,13 @@ public partial class SettingsProfile
             }
         };
 
-        CursorOpacity = new(1)
+        CursorOpacity = new SettingsItem<double>(1)
         {
             Id = "CursorOpacity",
             Title = "Cursor Opacity",
             Description = "Adjusts the cursor opacity",
             Section = SettingsSection.Visual,
-            Slider = new()
+            Slider = new SettingsSlider
             {
                 Step = 0.05f,
                 MinValue = 0,
@@ -762,13 +814,13 @@ public partial class SettingsProfile
             }
         };
 
-        CursorRotation = new(0)
+        CursorRotation = new SettingsItem<double>(0)
         {
             Id = "CursorRotation",
             Title = "Cursor Rotation",
             Description = "Degrees to rotate the cursor by every second",
             Section = SettingsSection.Visual,
-            Slider = new()
+            Slider = new SettingsSlider
             {
                 Step = 1,
                 MinValue = -360,
@@ -776,7 +828,7 @@ public partial class SettingsProfile
             }
         };
 
-        CursorTrail = new(false)
+        CursorTrail = new SettingsItem<bool>(false)
         {
             Id = "CursorTrail",
             Title = "Cursor Trail",
@@ -784,13 +836,13 @@ public partial class SettingsProfile
             Section = SettingsSection.Visual
         };
 
-        TrailTime = new(0.05f)
+        TrailTime = new SettingsItem<double>(0.05f)
         {
             Id = "TrailTime",
             Title = "Cursor Trail Time",
             Description = "Adjusts trail visibility time",
             Section = SettingsSection.Visual,
-            Slider = new()
+            Slider = new SettingsSlider
             {
                 Step = 0.01f,
                 MinValue = 0,
@@ -798,13 +850,13 @@ public partial class SettingsProfile
             }
         };
 
-        TrailDetail = new(100)
+        TrailDetail = new SettingsItem<double>(100)
         {
             Id = "TrailDetail",
             Title = "Cursor Trail Detail",
             Description = "Adjusts the detail for the trail, a high value may impact performance",
             Section = SettingsSection.Visual,
-            Slider = new()
+            Slider = new SettingsSlider
             {
                 Step = 1f,
                 MinValue = 0,
@@ -812,7 +864,7 @@ public partial class SettingsProfile
             }
         };
 
-        UseCursorInMenus = new(false)
+        UseCursorInMenus = new SettingsItem<bool>(false)
         {
             Id = "UseCursorInMenus",
             Title = "Use Cursor in Menus",
@@ -852,47 +904,48 @@ public partial class SettingsProfile
         //}
         //};
 
-        SimpleHUD = new(false)
+        SimpleHUD = new SettingsItem<bool>(false)
         {
             Id = "SimpleHUD",
             Title = "Simple HUD",
-            Description = "Hides the regular left and right panels, and instead displays a simple miss counter on the right",
-            Section = SettingsSection.Visual,
+            Description =
+                "Hides the regular left and right panels, and instead displays a simple miss counter on the right",
+            Section = SettingsSection.Visual
         };
 
-        SuperSimpleHUD = new(false)
+        SuperSimpleHUD = new SettingsItem<bool>(false)
         {
             Id = "SuperSimpleHUD",
             Title = "Super Simple HUD",
             Description = "Hides health bar, song duration, and song name",
-            Section = SettingsSection.Visual,
+            Section = SettingsSection.Visual
         };
 
-        AltComboCounter = new(false)
+        AltComboCounter = new SettingsItem<bool>(false)
         {
             Id = "AltComboCounter",
             Title = "Alt. Combo Counter",
             Description = "Moves the Combo Counter to the HUD",
-            Section = SettingsSection.Visual,
+            Section = SettingsSection.Visual
         };
 
-        HitPopups = new(true)
+        HitPopups = new SettingsItem<bool>(true)
         {
             Id = "HitPopups",
             Title = "Hit Score Popups",
             Description = "Toggles a popup on a hit",
-            Section = SettingsSection.Visual,
+            Section = SettingsSection.Visual
         };
 
-        MissPopups = new(true)
+        MissPopups = new SettingsItem<bool>(true)
         {
             Id = "MissPopups",
             Title = "Miss Popups",
             Description = "Toggles a popup on a miss",
-            Section = SettingsSection.Visual,
+            Section = SettingsSection.Visual
         };
 
-        Fullscreen = new(true)
+        Fullscreen = new SettingsItem<bool>(true)
         {
             Id = "Fullscreen",
             Title = "Fullscreen",
@@ -901,16 +954,17 @@ public partial class SettingsProfile
             UpdateAction = (_, _) => updateWindowMode()
         };
 
-        BorderlessFullscreen = new(false)
+        BorderlessFullscreen = new SettingsItem<bool>(false)
         {
             Id = "BorderlessFullscreen",
             Title = "Borderless Fullscreen",
-            Description = "Alters the Fullscreen toggle to use Borderless fullscreen instead of Exclusive, may fix some issues with drawing tablets",
+            Description =
+                "Alters the Fullscreen toggle to use Borderless fullscreen instead of Exclusive, may fix some issues with drawing tablets",
             Section = SettingsSection.Video,
             UpdateAction = (_, _) => updateWindowMode()
         };
 
-        LockFPS = new(false)
+        LockFPS = new SettingsItem<bool>(false)
         {
             Id = "LockFPS",
             Title = "Lock FPS",
@@ -919,22 +973,22 @@ public partial class SettingsProfile
             UpdateAction = (value, _) => Engine.MaxFps = value ? FPS.Value : 0
         };
 
-        FPS = new(240)
+        FPS = new SettingsItem<int>(240)
         {
             Id = "FPS",
             Title = "FPS",
             Description = "Adjusts maximum frames per second, we recommend this being 2x your refresh rate",
             Section = SettingsSection.Video,
-            Slider = new()
+            Slider = new SettingsSlider
             {
                 Step = 5,
                 MinValue = 30,
-                MaxValue = 1000,
+                MaxValue = 1000
             },
             UpdateAction = (value, _) => Engine.MaxFps = LockFPS.Value ? value : 0
         };
 
-        VSyncMenus = new(true)
+        VSyncMenus = new SettingsItem<bool>(true)
         {
             Id = "VSyncMenus",
             Title = "V-Sync in Menus",
@@ -943,9 +997,9 @@ public partial class SettingsProfile
             UpdateAction = (value, _) =>
             {
                 if (SceneManager.Scene is not Game)
-                {
-                    DisplayServer.WindowSetVsyncMode(value ? DisplayServer.VSyncMode.Adaptive : DisplayServer.VSyncMode.Disabled);
-                }
+                    DisplayServer.WindowSetVsyncMode(value
+                        ? DisplayServer.VSyncMode.Adaptive
+                        : DisplayServer.VSyncMode.Disabled);
             }
         };
 
@@ -953,21 +1007,21 @@ public partial class SettingsProfile
 
         #region Audio
 
-        AutoplayJukebox = new(true)
+        AutoplayJukebox = new SettingsItem<bool>(true)
         {
             Id = "AutoplayJukebox",
             Title = "Autoplay Jukebox",
             Description = "Automatically plays the jukebox on start",
-            Section = SettingsSection.Audio,
+            Section = SettingsSection.Audio
         };
 
-        LocalOffset = new(0)
+        LocalOffset = new SettingsItem<double>(0)
         {
             Id = "LocalOffset",
             Title = "Local Offset",
             Description = "Adjusts audio offset in milliseconds",
             Section = SettingsSection.Audio,
-            Slider = new()
+            Slider = new SettingsSlider
             {
                 Step = 1,
                 MinValue = -500,
@@ -975,31 +1029,31 @@ public partial class SettingsProfile
             }
         };
 
-        AlwaysPlayHitSound = new(false)
+        AlwaysPlayHitSound = new SettingsItem<bool>(false)
         {
             Id = "AlwaysPlayHitSound",
             Title = "Always Play Hit Sound",
             Description = "Toggles hit sound to always play",
-            Section = SettingsSection.Audio,
+            Section = SettingsSection.Audio
         };
 
-        EnableHitSound = new(true)
+        EnableHitSound = new SettingsItem<bool>(true)
         {
             Id = "EnableHitSound",
             Title = "Enable Hit Sound",
             Description = "Enables hit sound playback",
-            Section = SettingsSection.Audio,
+            Section = SettingsSection.Audio
         };
 
-        EnableMissSound = new(true)
+        EnableMissSound = new SettingsItem<bool>(true)
         {
             Id = "EnableMissSound",
             Title = "Enable Miss Sound",
             Description = "Enables miss sound playback",
-            Section = SettingsSection.Audio,
+            Section = SettingsSection.Audio
         };
 
-        EnableMenuMusic = new(true)
+        EnableMenuMusic = new SettingsItem<bool>(true)
         {
             Id = "EnableMenuMusic",
             Title = "Enable Menu Music",
@@ -1007,21 +1061,21 @@ public partial class SettingsProfile
             Section = SettingsSection.Audio,
             UpdateAction = (_, init) =>
             {
-                if (!init)
-                {
-                    SoundManager.RefreshMenuMusicPlayback();
-                }
+                if (!init) SoundManager.RefreshMenuMusicPlayback();
             }
         };
 
-        VolumeMaster = new(50)
+        VolumeMaster = new SettingsItem<double>(50)
         {
             Id = "VolumeMaster",
             Title = "Master Volume",
             Description = "Master volume control for all audio",
             Section = SettingsSection.Audio,
-            UpdateAction = (_, init) => { if (!init) { SoundManager.UpdateVolume(); } },
-            Slider = new()
+            UpdateAction = (_, init) =>
+            {
+                if (!init) SoundManager.UpdateVolume();
+            },
+            Slider = new SettingsSlider
             {
                 Step = 1,
                 MinValue = 0,
@@ -1029,14 +1083,17 @@ public partial class SettingsProfile
             }
         };
 
-        VolumeMusic = new(50)
+        VolumeMusic = new SettingsItem<double>(50)
         {
             Id = "VolumeMusic",
             Title = "Music Volume",
             Description = "Audio control for the music",
             Section = SettingsSection.Audio,
-            UpdateAction = (_, init) => { if (!init) { SoundManager.UpdateVolume(); } },
-            Slider = new()
+            UpdateAction = (_, init) =>
+            {
+                if (!init) SoundManager.UpdateVolume();
+            },
+            Slider = new SettingsSlider
             {
                 Step = 1,
                 MinValue = 0,
@@ -1044,14 +1101,17 @@ public partial class SettingsProfile
             }
         };
 
-        VolumeSFX = new(50)
+        VolumeSFX = new SettingsItem<double>(50)
         {
             Id = "VolumeSFX",
             Title = "SFX Volume",
             Description = "Audio control for other sound effects",
             Section = SettingsSection.Audio,
-            UpdateAction = (_, init) => { if (!init) { SoundManager.UpdateVolume(); } },
-            Slider = new()
+            UpdateAction = (_, init) =>
+            {
+                if (!init) SoundManager.UpdateVolume();
+            },
+            Slider = new SettingsSlider
             {
                 Step = 1,
                 MinValue = 0,
@@ -1059,14 +1119,17 @@ public partial class SettingsProfile
             }
         };
 
-        VolumeHitSound = new(50)
+        VolumeHitSound = new SettingsItem<double>(50)
         {
             Id = "VolumeHitSound",
             Title = "Hit Sound Volume",
             Description = "Audio control for hit sound",
             Section = SettingsSection.Audio,
-            UpdateAction = (_, init) => { if (!init) { SoundManager.UpdateVolume(); } },
-            Slider = new()
+            UpdateAction = (_, init) =>
+            {
+                if (!init) SoundManager.UpdateVolume();
+            },
+            Slider = new SettingsSlider
             {
                 Step = 1,
                 MinValue = 0,
@@ -1074,14 +1137,17 @@ public partial class SettingsProfile
             }
         };
 
-        VolumeMissSound = new(50)
+        VolumeMissSound = new SettingsItem<double>(50)
         {
             Id = "VolumeMissSound",
             Title = "Miss Sound Volume",
             Description = "Audio control for miss sound",
             Section = SettingsSection.Audio,
-            UpdateAction = (_, init) => { if (!init) { SoundManager.UpdateVolume(); } },
-            Slider = new()
+            UpdateAction = (_, init) =>
+            {
+                if (!init) SoundManager.UpdateVolume();
+            },
+            Slider = new SettingsSlider
             {
                 Step = 1,
                 MinValue = 0,
@@ -1089,14 +1155,17 @@ public partial class SettingsProfile
             }
         };
 
-        VolumeMenuMusic = new(50)
+        VolumeMenuMusic = new SettingsItem<double>(50)
         {
             Id = "VolumeMenuMusic",
             Title = "Menu Music Volume",
             Description = "Audio control for menu music",
             Section = SettingsSection.Audio,
-            UpdateAction = (_, init) => { if (!init) { SoundManager.UpdateVolume(); } },
-            Slider = new()
+            UpdateAction = (_, init) =>
+            {
+                if (!init) SoundManager.UpdateVolume();
+            },
+            Slider = new SettingsSlider
             {
                 Step = 1,
                 MinValue = 0,
@@ -1108,39 +1177,27 @@ public partial class SettingsProfile
 
         #region Other
 
-        ImportNightlyProfile = new(default)
-        {
-            Id = "ImportNightlyProfile",
-            Title = "Import Nightly Settings",
-            Description = "Imports settings from the nightly client",
-            Section = SettingsSection.Other,
-            Buttons =
-            [
-                new() { Title = "Import", Description = "Automatically import settings from nightly", OnPressed = () => {
-                        if (Directory.Exists(Constants.NIGHTLY_FOLDER)) {
-                            ImportFromNightlySettings($"{Constants.NIGHTLY_FOLDER}/settings.json");
-                        }
-                } }
-            ],
-            SaveToDisk = false,
-        };
-
-        NightlyImportDialog = new(default)
+        NightlyImportDialog = new SettingsItem<Variant>(default)
         {
             Id = "NightlyImportDialog",
-            Title = "", // this has no title because its supposed to be a button belonging to the field above
+            Title = "", // this has no title because it's supposed to be a button belonging to the field above
             Description = "",
             Section = SettingsSection.Other,
             Buttons =
             [
-                new() { Title = "Choose file", Description = "Import manually from a nightly settings file", OnPressed = () => {
-                        SettingsMenu.Instance.ImportNightlyDialog.PopupCentered();
-                } }
+                new SettingsButton
+                {
+                    Title = "Choose file", Description = "Import manually from a nightly settings file", OnPressed =
+                        () =>
+                        {
+                            SettingsMenu.Instance.ImportNightlyDialog.PopupCentered();
+                        }
+                }
             ],
-            SaveToDisk = false,
+            SaveToDisk = false
         };
 
-        ImportNightlyMeshes = new(default)
+        ImportNightlyMeshes = new SettingsItem<Variant>(default)
         {
             Id = "ImportNightlyMeshes",
             Title = "Import Nightly Meshes",
@@ -1148,16 +1205,21 @@ public partial class SettingsProfile
             Section = SettingsSection.Other,
             Buttons =
             [
-                new() { Title = "Import Nightly Meshes", Description = "Imports meshes from the nightly folder", OnPressed = () => {
-                    importMeshesFromNightly();
-                    SettingsManager.Instance.Settings.NoteMesh.List.Values = getAvailableMeshes();
-                    SettingsMenu.Instance.RefreshList(SettingsManager.Instance.Settings.NoteMesh);
-                    } }
+                new SettingsButton
+                {
+                    Title = "Import Nightly Meshes", Description = "Imports meshes from the nightly folder", OnPressed =
+                        () =>
+                        {
+                            importMeshesFromNightly();
+                            SettingsManager.Instance.Settings.NoteMesh.List.Values = getAvailableMeshes();
+                            SettingsMenu.Instance.RefreshList(SettingsManager.Instance.Settings.NoteMesh);
+                        }
+                }
             ],
-            SaveToDisk = false,
+            SaveToDisk = false
         };
 
-        ImportNightlyColorsets = new(default)
+        ImportNightlyColorsets = new SettingsItem<Variant>(default)
         {
             Id = "ImportNightlyColorsets",
             Title = "Import Nightly Colorsets",
@@ -1165,16 +1227,21 @@ public partial class SettingsProfile
             Section = SettingsSection.Other,
             Buttons =
             [
-                new() { Title = "Import Nightly Colorsets", Description = "Imports colorsets from the nightly folder", OnPressed = () => {
-                    importColorsetsFromNightly();
-                    SettingsManager.Load();
-                    SettingsMenu.Instance.RefreshList(SettingsManager.Instance.Settings.NoteColors);
-                } }
+                new SettingsButton
+                {
+                    Title = "Import Nightly Colorsets", Description = "Imports colorsets from the nightly folder",
+                    OnPressed = () =>
+                    {
+                        importColorsetsFromNightly();
+                        SettingsManager.Load();
+                        SettingsMenu.Instance.RefreshList(SettingsManager.Instance.Settings.NoteColors);
+                    }
+                }
             ],
-            SaveToDisk = false,
+            SaveToDisk = false
         };
 
-        ImportRhsProfile = new(default)
+        ImportRhsProfile = new SettingsItem<Variant>(default)
         {
             Id = "ImportRhsProfile",
             Title = "Import RHS",
@@ -1182,7 +1249,7 @@ public partial class SettingsProfile
             Section = SettingsSection.Other,
             Buttons =
             [
-                new()
+                new SettingsButton
                 {
                     Title = "Choose file", Description = "Import a skin and settings from a RHS file",
                     OnPressed = () =>
@@ -1191,10 +1258,10 @@ public partial class SettingsProfile
                     }
                 }
             ],
-            SaveToDisk = false,
+            SaveToDisk = false
         };
 
-        DisplayFPS = new(true)
+        DisplayFPS = new SettingsItem<bool>(true)
         {
             Id = "DisplayFPS",
             Title = "Display FPS",
@@ -1202,7 +1269,7 @@ public partial class SettingsProfile
             Section = SettingsSection.Other
         };
 
-        RecordReplays = new(true)
+        RecordReplays = new SettingsItem<bool>(true)
         {
             Id = "RecordReplays",
             Title = "Record Replays",
@@ -1210,15 +1277,16 @@ public partial class SettingsProfile
             Section = SettingsSection.Other
         };
 
-        OptionalPlaytestParameters = new(true)
+        OptionalPlaytestParameters = new SettingsItem<bool>(true)
         {
             Id = "OptionalPlaytestParameters",
             Title = "Use Editor Playtest Settings",
-            Description = "Takes \"Start From\" and \"Speed\" from external editors like the SSQE when using the \"Playtest\" button",
+            Description =
+                "Takes \"Start From\" and \"Speed\" from external editors like the SSQE when using the \"Playtest\" button",
             Section = SettingsSection.Other
         };
 
-        ResetToDefaults = new(default)
+        ResetToDefaults = new SettingsItem<Variant>(default)
         {
             Id = "ResetToDefaults",
             Title = "Reset to Defaults",
@@ -1226,15 +1294,13 @@ public partial class SettingsProfile
             Section = SettingsSection.Other,
             Buttons =
             [
-                new()
+                new SettingsButton
                 {
                     Title = "Reset",
                     Description = "WARNING: THIS RESETS YOUR CURRENT PROFILE",
-                    OnPressed = () => {
-                        SettingsManager.ResetToDefaults();
-                    }
+                    OnPressed = SettingsManager.ResetToDefaults
                 }
-            ],
+            ]
         };
 
         #endregion
@@ -1254,26 +1320,20 @@ public partial class SettingsProfile
         var dictionary = new Dictionary<SettingsSection, List<ISettingsItem>>();
 
         foreach (SettingsSection section in Enum.GetValues(typeof(SettingsSection)))
-        {
             dictionary.Add(section, new List<ISettingsItem>());
-        }
 
         var items = typeof(SettingsProfile).GetProperties()
             .Where(p => typeof(ISettingsItem).IsAssignableFrom(p.PropertyType))
             .Where(p => Attribute.IsDefined(p, typeof(OrderAttribute)))
             .OrderBy
-            (
-                p => ((OrderAttribute)p
+            (p => ((OrderAttribute)p
                 .GetCustomAttributes(typeof(OrderAttribute), false)
                 .Single()).Order
             )
             .Select(p => (ISettingsItem)p.GetValue(this))
             .ToList();
 
-        foreach (var item in items)
-        {
-            dictionary[item.Section].Add(item);
-        }
+        foreach (var item in items) dictionary[item.Section].Add(item);
 
         return dictionary;
     }
@@ -1285,7 +1345,11 @@ public partial class SettingsProfile
 
     private void updateWindowMode()
     {
-        var windowMode = Fullscreen ? (!BorderlessFullscreen ? DisplayServer.WindowMode.ExclusiveFullscreen : DisplayServer.WindowMode.Fullscreen) : DisplayServer.WindowMode.Windowed;
+        var windowMode = Fullscreen
+            ? !BorderlessFullscreen
+                ? DisplayServer.WindowMode.ExclusiveFullscreen
+                : DisplayServer.WindowMode.Fullscreen
+            : DisplayServer.WindowMode.Windowed;
 
         DisplayServer.WindowSetMode(windowMode);
     }
@@ -1298,10 +1362,7 @@ public partial class SettingsProfile
         if (Directory.Exists(meshDir))
         {
             string[] objFiles = Directory.GetFiles(meshDir, "*.obj");
-            foreach (string file in objFiles)
-            {
-                meshes.Add(Path.GetFileNameWithoutExtension(file));
-            }
+            foreach (string file in objFiles) meshes.Add(Path.GetFileNameWithoutExtension(file));
         }
 
         return meshes;
@@ -1317,15 +1378,12 @@ public partial class SettingsProfile
             return;
         }
 
-        using JsonDocument json = JsonDocument.Parse(nightlySettings);
-        JsonElement root = json.RootElement;
+        using var json = JsonDocument.Parse(nightlySettings);
+        var root = json.RootElement;
 
         T? getSetting<T>(string key) where T : struct
         {
-            if (root.TryGetProperty(key, out JsonElement element))
-            {
-                return element.Deserialize<T>();
-            }
+            if (root.TryGetProperty(key, out var element)) return element.Deserialize<T>();
 
             return null;
         }
@@ -1333,10 +1391,7 @@ public partial class SettingsProfile
         // needs a separate helper for strings due to the struct constraint in getSetting()
         string? getStringSetting(string key)
         {
-            if (root.TryGetProperty(key, out JsonElement element))
-            {
-                return element.GetString();
-            }
+            if (root.TryGetProperty(key, out var element)) return element.GetString();
 
             return null;
         }
@@ -1345,10 +1400,7 @@ public partial class SettingsProfile
         {
             double? channelDb = getSetting<double>(nightlyKey);
 
-            if (channelDb == null)
-            {
-                return 50;
-            }
+            if (channelDb == null) return 50;
 
             double masterDb = getSetting<double>("master_volume") ?? 20 * Math.Log10(0.5);
             double totalDb = Math.Clamp(masterDb + channelDb.Value, -80, 0);
@@ -1356,12 +1408,14 @@ public partial class SettingsProfile
             return SoundManager.ComputeVolumeFromDb((float)totalDb, 100, (float)range);
         }
 
-        SettingsProfile nightlyProfile = new SettingsProfile();
+        var nightlyProfile = new SettingsProfile();
 
         Dictionary<string, Func<Variant>> conversions = new()
         {
             // sensitivity scales with fov but in nightly it doesnt
-            ["Sensitivity"] = () => getSetting<double>("sensitivity") * 2.16 * (70 / (getSetting<double>("fov") ?? 70)) ?? nightlyProfile.Sensitivity,
+            ["Sensitivity"] = () =>
+                getSetting<double>("sensitivity") * 2.16 * (70 / (getSetting<double>("fov") ?? 70)) ??
+                nightlyProfile.Sensitivity,
             ["AbsoluteSensitivity"] = () => getSetting<double>("absolute_scale") ?? nightlyProfile.AbsoluteSensitivity,
             ["AbsoluteInput"] = () => getSetting<bool>("absolute_mode") ?? nightlyProfile.AbsoluteInput,
             ["CursorDrift"] = () => getSetting<bool>("enable_drift_cursor") ?? nightlyProfile.CursorDrift,
@@ -1395,7 +1449,7 @@ public partial class SettingsProfile
             ["EnableMenuMusic"] = () => getSetting<bool>("play_menu_music") ?? nightlyProfile.EnableMenuMusic,
             ["AutoplayJukebox"] = () => getSetting<bool>("auto_preview_song") ?? nightlyProfile.AutoplayJukebox,
             ["LocalOffset"] = () => getSetting<double>("music_offset") ?? nightlyProfile.LocalOffset,
-            ["RecordReplays"] = () => getSetting<bool>("record_replays") ?? nightlyProfile.RecordReplays,
+            ["RecordReplays"] = () => getSetting<bool>("record_replays") ?? nightlyProfile.RecordReplays
         };
 
         var settingsById = typeof(SettingsProfile).GetProperties()
@@ -1403,10 +1457,7 @@ public partial class SettingsProfile
             .Select(p => (ISettingsItem)p.GetValue(nightlyProfile))
             .ToDictionary(item => item.Id);
 
-        foreach (var (id, convert) in conversions)
-        {
-            settingsById[id].SetVariant(convert());
-        }
+        foreach ((string id, var convert) in conversions) settingsById[id].SetVariant(convert());
 
         // prevents overriding existing 'nightly' profile
         string getProfileName(string baseName)
@@ -1451,19 +1502,19 @@ public partial class SettingsProfile
 
         copyDirectory(defaultSkinDirectory, skinDirectory);
 
-        using ZipArchive archive = ZipFile.OpenRead(rhsPath);
+        using var archive = ZipFile.OpenRead(rhsPath);
         JsonElement root = default;
-        ZipArchiveEntry configEntry = findRhsEntry(archive, "config");
+        var configEntry = findRhsEntry(archive, "config");
 
         if (configEntry != null)
         {
             using StreamReader reader = new(configEntry.Open());
-            using JsonDocument config = JsonDocument.Parse(reader.ReadToEnd());
+            using var config = JsonDocument.Parse(reader.ReadToEnd());
             root = config.RootElement.Clone();
         }
 
         string colorsetPath = getStringSetting("ColorSet");
-        ZipArchiveEntry colorsetEntry = findRhsEntry(archive, colorsetPath, "colorSet");
+        var colorsetEntry = findRhsEntry(archive, colorsetPath, "colorSet");
         string colorsetName = null;
 
         if (colorsetEntry != null)
@@ -1474,7 +1525,7 @@ public partial class SettingsProfile
             colorsetName = Path.GetFileNameWithoutExtension(colorsetName);
         }
 
-        ZipArchiveEntry cursorEntry = findRhsEntry(archive, getStringSetting("CursorSkin"), "cursorSkin", "cursors");
+        var cursorEntry = findRhsEntry(archive, getStringSetting("CursorSkin"), "cursorSkin", "cursors");
         cursorEntry ??= findRhsEntry(archive, getStringSetting("CursorTrailSkin"), "cursorTrailSkin");
         cursorEntry ??=
             archive.Entries.FirstOrDefault(entry =>
@@ -1486,12 +1537,13 @@ public partial class SettingsProfile
             File.WriteAllBytes($"{skinDirectory}/game/cursor.png", readEntry(cursorEntry));
         }
 
-        SettingsProfile rhsProfile = new SettingsProfile();
+        var rhsProfile = new SettingsProfile();
         Dictionary<string, Func<Variant>> conversions = new()
         {
             ["Skin"] = () => skinName,
             ["Sensitivity"] = () =>
-                getSetting<double>("Sensitivity") * 2.16 * (70 / (getSetting<double>("CameraFov") ?? 70)) ?? rhsProfile.Sensitivity,
+                getSetting<double>("Sensitivity") * 2.16 * (70 / (getSetting<double>("CameraFov") ?? 70)) ??
+                rhsProfile.Sensitivity,
             ["FoV"] = () => getSetting<double>("CameraFov") ?? rhsProfile.FoV,
             ["ApproachRate"] = () => getSetting<double>("ApproachRate") ?? rhsProfile.ApproachRate,
             ["ApproachDistance"] = () => getSetting<double>("SpawnDistance") ?? rhsProfile.ApproachDistance,
@@ -1503,7 +1555,7 @@ public partial class SettingsProfile
             ["CursorOpacity"] = () => getSetting<double>("CursorOpacity") ?? rhsProfile.CursorOpacity,
             ["CursorTrail"] = () => getSetting<bool>("CursorTrailEnabled") ?? rhsProfile.CursorTrail,
             ["TrailTime"] = () => getSetting<double>("CursorTrailFadeTimeSeconds") ?? rhsProfile.TrailTime,
-            ["NoteSize"] = () => 0.875,
+            ["NoteSize"] = () => 0.875
         };
 
         var settingsById = typeof(SettingsProfile).GetProperties()
@@ -1511,15 +1563,9 @@ public partial class SettingsProfile
             .Select(p => (ISettingsItem)p.GetValue(rhsProfile))
             .ToDictionary(item => item.Id);
 
-        foreach (var (id, convert) in conversions)
-        {
-            settingsById[id].SetVariant(convert());
-        }
+        foreach ((string id, var convert) in conversions) settingsById[id].SetVariant(convert());
 
-        if (colorsetName != null)
-        {
-            settingsById["Colors"].SetVariant(colorsetName);
-        }
+        if (colorsetName != null) settingsById["Colors"].SetVariant(colorsetName);
 
         string profileName = getProfileName(skinName);
         File.WriteAllText($"{Constants.USER_FOLDER}/profiles/{profileName}.json",
@@ -1533,22 +1579,18 @@ public partial class SettingsProfile
 
         string getStringSetting(string key)
         {
-            if (root.ValueKind == JsonValueKind.Object && root.TryGetProperty(key, out JsonElement element) &&
-                element.TryGetProperty("Value", out JsonElement value))
-            {
+            if (root.ValueKind == JsonValueKind.Object && root.TryGetProperty(key, out var element) &&
+                element.TryGetProperty("Value", out var value))
                 return value.GetString();
-            }
 
             return null;
         }
 
         T? getSetting<T>(string key) where T : struct
         {
-            if (root.ValueKind == JsonValueKind.Object && root.TryGetProperty(key, out JsonElement element) &&
-                element.TryGetProperty("Value", out JsonElement value))
-            {
+            if (root.ValueKind == JsonValueKind.Object && root.TryGetProperty(key, out var element) &&
+                element.TryGetProperty("Value", out var value))
                 return value.Deserialize<T>();
-            }
 
             return null;
         }
@@ -1594,12 +1636,14 @@ public partial class SettingsProfile
         });
     }
 
-    private static bool isPng(ZipArchiveEntry entry) =>
-        Path.GetExtension(entry.Name).Equals(".png", StringComparison.OrdinalIgnoreCase);
+    private static bool isPng(ZipArchiveEntry entry)
+    {
+        return Path.GetExtension(entry.Name).Equals(".png", StringComparison.OrdinalIgnoreCase);
+    }
 
     private static byte[] readEntry(ZipArchiveEntry entry)
     {
-        using Stream stream = entry.Open();
+        using var stream = entry.Open();
         using MemoryStream memory = new();
         stream.CopyTo(memory);
         return memory.ToArray();
@@ -1610,14 +1654,10 @@ public partial class SettingsProfile
         Directory.CreateDirectory(destinationDirectory);
 
         foreach (string file in Directory.GetFiles(sourceDirectory))
-        {
             File.Copy(file, Path.Combine(destinationDirectory, Path.GetFileName(file)), true);
-        }
 
         foreach (string directory in Directory.GetDirectories(sourceDirectory))
-        {
             copyDirectory(directory, Path.Combine(destinationDirectory, Path.GetFileName(directory)));
-        }
     }
 
     private static void importColorsetsFromNightly()
@@ -1674,10 +1714,8 @@ public partial class SettingsProfile
                 string mtlDestinationPath = $"{meshesDir}/{Path.GetFileName(mtlFile)}";
 
                 File.Copy(file, destinationPath);
-                if (File.Exists(mtlFile))
-                {
-                    File.Copy(mtlFile, mtlDestinationPath);
-                }
+                if (File.Exists(mtlFile)) File.Copy(mtlFile, mtlDestinationPath);
+
                 importedCount++;
             }
         }
