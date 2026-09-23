@@ -122,74 +122,69 @@ public partial class MapBrowser : Control
             mapCard.Visible = true;
             mapCardTemplate.GetParent().AddChild(mapCard);
 
-            Button downloadButton = mapCard.GetNode<Button>("Download");
-            Panel downloadDim = downloadButton.GetNode<Panel>("Dim");
-            TextureRect downloadIcon = downloadButton.GetNode<TextureRect>("DownloadIcon");
-
-            Texture2D downloadIconTexture = GD.Load<Texture2D>("res://user/skins/default/ui/buttons/import.png");
-            Texture2D deleteIconTexture = GD.Load<Texture2D>("res://user/skins/default/ui/buttons/delete.png");
-            Texture2D throbberTexture = GD.Load<Texture2D>("res://textures/throbber.png");
-
-            Tween downloadTween = null;
-
-            TextureRect coverImage = mapCard.GetNode<TextureRect>("Row/CoverHolder/Cover");
-            TextureRect blurCoverImage = mapCard.GetNode<TextureRect>("Row/Map/BlurCoverHolder/BlurCover");
-
-            VBoxContainer info = mapCard.GetNode<VBoxContainer>("Row/Map/Content/Info");
-            VBoxContainer topText = info.GetNode<VBoxContainer>("Top/Text");
-            HBoxContainer bottomText = info.GetNode<HBoxContainer>("Bottom");
-
-            Label titleLabel = topText.GetNode<Label>("TitleHolder/Title");
-            Label mappersLabel = topText.GetNode<Label>("Details/VBoxContainer/Mapper");
-            PanelContainer notablePill = bottomText.GetNode<PanelContainer>("NotablePill");
-            Label difficultyLabel = topText.GetNode<Label>("Details/VBoxContainer/Difficulty");
-            Label noteCountLabel = topText.GetNode<Label>("Details/VBoxContainer/Notes");
-            PanelContainer rankingPill = bottomText.GetNode<PanelContainer>("RankingPill");
-            Label rankingLabel = rankingPill.GetNode<Label>("Ranking");
-            Label durationLabel = bottomText.GetNode<Label>("Duration");
-
             Map downloadedMap = getDownloadedMap(map.GetProperty("noteHash").GetString());
             bool isDownloaded = downloadedMap != null;
             bool isDownloading = false;
 
-            if (isDownloaded)
-            {
-                downloadIcon.Texture = deleteIconTexture;
-                downloadIcon.Modulate = Color.Color8(255, 255, 255);
-            }
-            else
-            {
-                downloadIcon.Texture = downloadIconTexture;
-            }
+            downloadIcon.Texture = isDownloaded ? deleteIconTexture : downloadIconTexture;
             downloadIcon.PivotOffset = downloadIcon.Size / 2;
 
-            downloadButton.MouseEntered += () =>
+
+            mapCard.MouseEntered += () =>
             {
                 if (isDownloading)
                     return;
 
-                downloadTween?.Kill();
-                downloadTween = downloadButton.CreateTween().SetTrans(Tween.TransitionType.Quad).SetEase(Tween.EaseType.InOut).SetParallel();
-                downloadTween.TweenProperty(downloadDim, "modulate", Color.Color8(255, 255, 255, 128), 0.2);
+                mapCardTween?.Kill();
+                mapCardTween = tweenMapCard(mapCard, blurCoverDim, rightPanel, contentContainer, downloadIcon, true);
 
-                if (!isDownloaded)
-                {
-                    downloadTween.TweenProperty(downloadIcon, "modulate", Color.Color8(255, 255, 255), 0.2);
-                }
+                downloadButton.SetMouseFilter(MouseFilterEnum.Stop);
+            };
+            mapCard.MouseExited += () =>
+            {
+                if (isDownloading || downloadButton.GetGlobalRect().HasPoint(downloadButton.GetGlobalMousePosition()))
+                    return;
+
+                mapCardTween?.Kill();
+                mapCardTween = tweenMapCard(mapCard, blurCoverDim, rightPanel, contentContainer, downloadIcon);
+
+                downloadButton.SetMouseFilter(MouseFilterEnum.Ignore);
+            };
+            downloadButton.MouseEntered += () =>
+            {
+                if (isDownloading) return;
+
+                downloadButtonTween?.Kill();
+                downloadButtonTween = tweenDownloadButton(downloadButton, downloadIcon, downloadButtonStyle, true);
             };
             downloadButton.MouseExited += () =>
             {
-                if (isDownloading)
-                    return;
+                if (isDownloading) return;
 
-                downloadTween?.Kill();
-                downloadTween = downloadButton.CreateTween().SetTrans(Tween.TransitionType.Quad).SetEase(Tween.EaseType.InOut).SetParallel();
-                downloadTween.TweenProperty(downloadDim, "modulate", Color.Color8(255, 255, 255, 0), 0.2);
+                downloadButtonTween?.Kill();
+                downloadButtonTween = tweenDownloadButton(downloadButton, downloadIcon, downloadButtonStyle);
 
-                if (!isDownloaded)
-                {
-                    downloadTween.TweenProperty(downloadIcon, "modulate", Color.Color8(255, 255, 255, 0), 0.2);
-                }
+                if (mapCard.GetGlobalRect().HasPoint(mapCard.GetGlobalMousePosition())) return;
+
+                mapCardTween?.Kill();
+                mapCardTween = tweenMapCard(mapCard, blurCoverDim, rightPanel, contentContainer, downloadIcon);
+
+                downloadButton.SetMouseFilter(MouseFilterEnum.Ignore);
+            };
+            downloadButton.ButtonDown += () =>
+            {
+                if (isDownloading) return;
+
+                downloadButtonTween?.Kill();
+                downloadButtonTween =
+                    tweenDownloadButton(downloadButton, downloadIcon, downloadButtonStyle, true, true);
+            };
+            downloadButton.ButtonUp += () =>
+            {
+                if (isDownloading) return;
+
+                downloadButtonTween?.Kill();
+                downloadButtonTween = tweenDownloadButton(downloadButton, downloadIcon, downloadButtonStyle, downloadButton.IsHovered());
             };
             downloadButton.Pressed += async () =>
             {
@@ -218,14 +213,12 @@ public partial class MapBrowser : Control
                     isDownloading = false;
                 }
 
-                downloadTween?.Kill();
+                downloadButtonTween?.Kill();
                 downloadButton.Disabled = false;
 
                 bool hovered = downloadButton.IsHovered();
 
-                downloadTween = downloadButton.CreateTween().SetTrans(Tween.TransitionType.Quad).SetEase(Tween.EaseType.InOut).SetParallel();
-                downloadTween.TweenProperty(downloadDim, "modulate", Color.Color8(255, 255, 255, (byte)(hovered ? 128 : 0)), 0.2);
-                downloadTween.TweenProperty(downloadIcon, "modulate", Color.Color8(255, 255, 255, (byte)(isDownloaded || hovered ? 255 : 0)), 0.2);
+                downloadButtonTween = tweenDownloadButton(downloadButton, downloadIcon, downloadButtonStyle, hovered);
 
                 downloadIcon.Texture = isDownloaded ? deleteIconTexture : downloadIconTexture;
             };
@@ -237,10 +230,10 @@ public partial class MapBrowser : Control
             string difficultyText = string.IsNullOrEmpty(difficultyName) ? Constants.DIFFICULTIES[difficulty] : difficultyName;
             bool isRanked = map.GetProperty("isRanked").GetBoolean();
             var rankingPillStyle = (StyleBoxFlat)rankingPill.GetThemeStylebox("panel").Duplicate();
-            var duration = TimeSpan.FromMilliseconds(map.GetProperty("length").GetDouble());
+            var mapLength = TimeSpan.FromMilliseconds(map.GetProperty("length").GetDouble());
 
             titleLabel.Text = $"{map.GetProperty("artist").GetString()} - {map.GetProperty("title").GetString()}";
-            mappersLabel.Text = $"by {string.Join(", ", map.GetProperty("mappers").EnumerateArray().Select(x => x.GetProperty("name").GetString()))}";
+            mappersLabel.Text = $"[color=#c8c8c8]by[/color] {string.Join(", ", map.GetProperty("mappers").EnumerateArray().Select(x => x.GetProperty("name").GetString()))}";
             notablePill.Visible = map.GetProperty("mappers").EnumerateArray().Any(x => x.GetProperty("isNotable").GetBoolean());
             difficultyLabel.Text = difficultyText;
             difficultyLabel.LabelSettings = (LabelSettings)difficultyLabel.LabelSettings.Duplicate();
@@ -252,29 +245,10 @@ public partial class MapBrowser : Control
             rankingPill.AddThemeStyleboxOverride("panel", rankingPillStyle);
 
             durationLabel.Text =
-                duration.TotalHours >= 1
-                    ? duration.ToString(@"hh\:mm\:ss", CultureInfo.InvariantCulture)
-                    : duration.ToString(@"mm\:ss", CultureInfo.InvariantCulture);
+                mapLength.TotalHours >= 1
+                    ? mapLength.ToString(@"hh\:mm\:ss", CultureInfo.InvariantCulture)
+                    : mapLength.ToString(@"mm\:ss", CultureInfo.InvariantCulture);
         }
-    }
-
-    private static async Task loadCover(JsonElement coverUrl, TextureRect coverTexture, TextureRect blurCoverTexture, CancellationTokenSource source)
-    {
-        var token = source.Token;
-
-        Texture2D cover = null;
-
-        if (!token.IsCancellationRequested && coverUrl.ValueKind != JsonValueKind.Null)
-        {
-            var coverImage = await MapBrowserService.GetCoverImage(coverUrl.GetString(), token);
-            cover = ImageTexture.CreateFromImage(coverImage);
-        }
-
-        if (!(IsInstanceValid(coverTexture) && IsInstanceValid(blurCoverTexture)))
-            return;
-
-        coverTexture.Texture = cover;
-        blurCoverTexture.Texture = cover;
     }
 
     private static async Task<Map> downloadMap(JsonElement fileUrl, string mapId, CancellationTokenSource source)
@@ -310,11 +284,6 @@ public partial class MapBrowser : Control
         }
     }
 
-    private static Map getDownloadedMap(string hash)
-    {
-        return MapManager.Maps.FirstOrDefault(m => m.ObjectHash == hash);
-    }
-
     private void onSearchTimerTimeout()
     {
         clearResults();
@@ -339,5 +308,25 @@ public partial class MapBrowser : Control
                 child.QueueFree();
             }
         }
+    }
+
+    private static Tween tweenMapCard(PanelContainer mapCard, Panel blurCoverDim, Panel rightPanel, MarginContainer contentContainer, TextureRect downloadIcon, bool hover = false, double duration = 0.2)
+    {
+        Tween mapCardTween = mapCard.CreateTween().SetTrans(Tween.TransitionType.Quad).SetEase(Tween.EaseType.InOut).SetParallel();
+        mapCardTween.TweenProperty(blurCoverDim, "modulate", Color.Color8(255, 255, 255, (byte)(hover ? 64 : 0)), duration);
+        mapCardTween.TweenProperty(rightPanel, "custom_minimum_size", new Vector2(hover ? 30 : 10, 0), duration);
+        mapCardTween.TweenProperty(contentContainer, "theme_override_constants/margin_right", hover ? 30 : 10, duration);
+        mapCardTween.TweenProperty(downloadIcon, "modulate", Color.Color8(255, 255, 255, (byte)(hover ? 204 : 0)), duration);
+
+        return mapCardTween;
+    }
+
+    private static Tween tweenDownloadButton(Button downloadButton, TextureRect downloadIcon, StyleBoxFlat downloadButtonStyle, bool hover = false, bool pressed = false, double duration = 0.2)
+    {
+        Tween downloadButtonTween = downloadButton.CreateTween().SetTrans(Tween.TransitionType.Quad).SetEase(Tween.EaseType.InOut).SetParallel();
+        downloadButtonTween.TweenProperty(downloadIcon, "modulate", Color.Color8(255, 255, 255, (byte)(hover ? 255 : 204)), duration);
+        downloadButtonTween.TweenProperty(downloadButtonStyle, "bg_color", Color.Color8(255, 255, 255, (byte)(pressed ? 70 : hover ? 40 : 0)), duration);
+
+        return downloadButtonTween;
     }
 }
