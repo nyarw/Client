@@ -314,19 +314,6 @@ popup/item_1/id = 1
 popup/item_2/text = "Both"
 popup/item_2/id = 2
 
-[node name="Installed" type="OptionButton" parent="Holder/Background/Layout/TopBarBackground/Margin/TopBar/Filters" unique_id=1262770447]
-layout_mode = 2
-size_flags_horizontal = 3
-alignment = 1
-selected = 2
-item_count = 3
-popup/item_0/text = "Online"
-popup/item_0/id = 1
-popup/item_1/text = "Downloaded"
-popup/item_1/id = 0
-popup/item_2/text = "Both"
-popup/item_2/id = 2
-
 [node name="ActiveFilters" type="HBoxContainer" parent="Holder/Background/Layout/TopBarBackground/Margin/TopBar" unique_id=1401022026]
 visible = false
 layout_mode = 2

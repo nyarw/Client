@@ -22,7 +22,6 @@ public partial class MapBrowser : Control
     private Button refresh;
     private MenuButton difficulty;
     private OptionButton status;
-    private OptionButton installed;
     private Timer searchTimer;
     private HBoxContainer filters;
     private ScrollContainer results;
@@ -34,6 +33,9 @@ public partial class MapBrowser : Control
         Descending,
         Ascending,
     }
+
+    // multiple of 3 because the results grid has 3 columns
+    private const int page_size = 18;
 
     private CancellationTokenSource source = new();
 
@@ -51,7 +53,6 @@ public partial class MapBrowser : Control
         refresh = searchBar.GetNode<Button>("Refresh");
         difficulty = topBar.GetNode<HBoxContainer>("Filters").GetNode<MenuButton>("Difficulty");
         status = topBar.GetNode<HBoxContainer>("Filters").GetNode<OptionButton>("Status");
-        installed = topBar.GetNode<HBoxContainer>("Filters").GetNode<OptionButton>("Installed");
         searchTimer = GetNode<Timer>("SearchTimer");
         results = holder.GetNode<ScrollContainer>("Background/Layout/Results");
         mapCardTemplate = results.GetNode<MapCard>("RowsMargin/Rows/MapCardTemplate");
@@ -70,7 +71,6 @@ public partial class MapBrowser : Control
         refresh.Pressed += refreshResults;
         difficulty.GetPopup().IdPressed += toggleDifficulty;
         status.ItemSelected += _ => refreshResults();
-        installed.ItemSelected += _ => refreshResults();
 
         hideButton.Pressed += HideMenu;
     }
@@ -123,13 +123,18 @@ public partial class MapBrowser : Control
 
     private async Task populate(MapQueryParameters queryParameters)
     {
-        source = new CancellationTokenSource();
+        CancellationTokenSource populationSource = new();
+        source = populationSource;
 
         JsonElement[] maps;
 
         try
         {
             maps = await MapBrowserService.Search(queryParameters);
+        }
+        catch (OperationCanceledException) when (populationSource.IsCancellationRequested)
+        {
+            return;
         }
         catch (Exception exception)
         {
@@ -138,7 +143,10 @@ public partial class MapBrowser : Control
             return;
         }
 
-        foreach (var map in maps.Where(matchesInstalledFilter))
+        if (populationSource.IsCancellationRequested)
+            return;
+
+        foreach (var map in maps)
         {
             if (mapCardTemplate.Duplicate() is not MapCard mapCard)
             {
@@ -147,7 +155,16 @@ public partial class MapBrowser : Control
 
             mapCard.Visible = true;
             mapCardTemplate.GetParent().AddChild(mapCard);
-            mapCard.Bind(map, source);
+
+            try
+            {
+                mapCard.Bind(map, populationSource);
+            }
+            catch (Exception exception)
+            {
+                Logger.Error(exception);
+                mapCard.QueueFree();
+            }
         }
     }
 
@@ -184,6 +201,7 @@ public partial class MapBrowser : Control
 
         return new MapQueryParameters
         {
+            Limit = page_size,
             Query = search.Text.Trim(),
             SortBy = sort.Selected switch
             {
@@ -199,17 +217,6 @@ public partial class MapBrowser : Control
             Difficulties = selectedDifficulties,
             Status = statuses,
         };
-    }
-
-    private bool matchesInstalledFilter(JsonElement map)
-    {
-        int installedFilter = installed.GetSelectedId();
-        if (installedFilter == 2)
-            return true;
-
-        bool downloaded =
-            map.TryGetProperty("noteHash", out var noteHash) && MapManager.Maps.Any(localMap => localMap.ObjectHash == noteHash.GetString());
-        return installedFilter == 0 ? downloaded : !downloaded;
     }
 
     private void toggleDirection()
