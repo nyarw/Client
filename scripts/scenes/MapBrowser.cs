@@ -1,6 +1,5 @@
 using System;
 using System.Linq;
-using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Godot;
@@ -26,7 +25,12 @@ public partial class MapBrowser : Control
     private HBoxContainer filters;
     private ScrollContainer results;
     private MapCard mapCardTemplate;
+    private Button previous;
+    private Button next;
+    private Label page;
     private SortDirection sortDirection;
+    private int offset;
+    private int total;
 
     private enum SortDirection
     {
@@ -56,6 +60,9 @@ public partial class MapBrowser : Control
         searchTimer = GetNode<Timer>("SearchTimer");
         results = holder.GetNode<ScrollContainer>("Background/Layout/Results");
         mapCardTemplate = results.GetNode<MapCard>("RowsMargin/Rows/MapCardTemplate");
+        previous = holder.GetNode<Button>("Background/Layout/Pagination/Previous");
+        next = holder.GetNode<Button>("Background/Layout/Pagination/Next");
+        page = holder.GetNode<Label>("Background/Layout/Pagination/Page");
 
         mapCardTemplate.Visible = false;
 
@@ -68,9 +75,11 @@ public partial class MapBrowser : Control
         searchTimer.Timeout += onSearchTimerTimeout;
         sort.ItemSelected += _ => refreshResults();
         direction.Pressed += toggleDirection;
-        refresh.Pressed += refreshResults;
+        refresh.Pressed += loadPage;
         difficulty.GetPopup().IdPressed += toggleDifficulty;
         status.ItemSelected += _ => refreshResults();
+        previous.Pressed += () => changePage(-page_size);
+        next.Pressed += () => changePage(page_size);
 
         hideButton.Pressed += HideMenu;
     }
@@ -126,19 +135,28 @@ public partial class MapBrowser : Control
         CancellationTokenSource populationSource = new();
         source = populationSource;
 
-        JsonElement[] maps;
+        MapSearchResult searchResult;
 
         try
         {
-            maps = await MapBrowserService.Search(queryParameters);
+            searchResult = await MapBrowserService.Search(queryParameters);
         }
         catch (OperationCanceledException) when (populationSource.IsCancellationRequested)
         {
             return;
         }
+        catch (RateLimitedException exception)
+        {
+            updatePaginationButtons();
+
+            string wait = exception.RetryAfter is { } retryAfter ? $"in {(int)Math.Ceiling(retryAfter.TotalSeconds)}s" : "later";
+            _ = ToastNotification.Notify($"Rate limited, try again {wait}", 2);
+            return;
+        }
         catch (Exception exception)
         {
-            await ToastNotification.Notify("Failed to load maps", 2);
+            updatePaginationButtons();
+            _ = ToastNotification.Notify("Failed to load maps", 2);
             Logger.Error(exception);
             return;
         }
@@ -146,7 +164,10 @@ public partial class MapBrowser : Control
         if (populationSource.IsCancellationRequested)
             return;
 
-        foreach (var map in maps)
+        total = searchResult.Total;
+        updatePagination(searchResult.Maps.Length);
+
+        foreach (var map in searchResult.Maps)
         {
             if (mapCardTemplate.Duplicate() is not MapCard mapCard)
             {
@@ -202,6 +223,7 @@ public partial class MapBrowser : Control
         return new MapQueryParameters
         {
             Limit = page_size,
+            Offset = offset,
             Query = search.Text.Trim(),
             SortBy = sort.Selected switch
             {
@@ -228,8 +250,36 @@ public partial class MapBrowser : Control
 
     private void refreshResults()
     {
+        offset = 0;
+        loadPage();
+    }
+
+    private void changePage(int delta)
+    {
+        offset = Math.Max(offset + delta, 0);
+        loadPage();
+    }
+
+    private void loadPage()
+    {
+        previous.Disabled = true;
+        next.Disabled = true;
+        results.ScrollVertical = 0;
+
         clearResults();
         _ = populate(buildQueryParameters());
+    }
+
+    private void updatePaginationButtons()
+    {
+        previous.Disabled = offset == 0;
+        next.Disabled = offset + page_size >= total;
+    }
+
+    private void updatePagination(int shown)
+    {
+        updatePaginationButtons();
+        page.Text = shown == 0 ? "0-0 of 0" : $"{offset + 1}-{offset + shown} of {total}";
     }
 
     private void clearResults()

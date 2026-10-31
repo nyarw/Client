@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Net;
 using System.Text.Json;
 using System.Threading.Tasks;
 using System.Web;
@@ -27,6 +28,10 @@ public static class Maps
         string url = $"/maps?{query}";
 
         var response = await ApiClient.CLIENT.GetAsync(url);
+
+        if (response.StatusCode == HttpStatusCode.TooManyRequests)
+            throw new RateLimitedException(response.Headers.RetryAfter?.Delta);
+
         response.EnsureSuccessStatusCode();
         string json = await response.Content.ReadAsStringAsync();
         return JsonDocument.Parse(json);
