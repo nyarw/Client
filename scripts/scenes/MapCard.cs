@@ -241,7 +241,12 @@ public partial class MapCard : PanelContainer
             tweenRightPanelColor(rightPanel, rightPanelCorners, state);
         };
 
-        _ = loadCover(map.GetProperty("covers").GetProperty("128"), coverImage, blurCoverImage, source);
+        JsonElement coverUrl =
+            map.TryGetProperty("covers", out var covers) && covers.ValueKind == JsonValueKind.Object && covers.TryGetProperty("128", out var cover128)
+                ? cover128
+                : default;
+
+        _ = loadCover(coverUrl, coverImage, blurCoverImage, Constants.DIFFICULTY_COLORS[difficulty], source);
     }
 
     private static async Task<Map> downloadMap(JsonElement fileUrl, string mapId, CancellationTokenSource source)
@@ -277,17 +282,28 @@ public partial class MapCard : PanelContainer
         }
     }
 
-    private static async Task loadCover(JsonElement coverUrl, TextureRect coverTexture, TextureRect blurCoverTexture, CancellationTokenSource source)
+    private static async Task loadCover(
+        JsonElement coverUrl,
+        TextureRect coverTexture,
+        TextureRect blurCoverTexture,
+        Color placeholderTint,
+        CancellationTokenSource source
+    )
     {
         var token = source.Token;
-        Texture2D cover = null;
+        Texture2D cover = SkinManager.Instance.Skin.MapListGridCoverBackgroundImage;
+        Color tint = placeholderTint;
 
         try
         {
-            if (!token.IsCancellationRequested && coverUrl.ValueKind != JsonValueKind.Null)
+            if (!token.IsCancellationRequested && coverUrl.ValueKind == JsonValueKind.String)
             {
                 var coverImage = await MapBrowserService.GetCoverImage(coverUrl.GetString(), token);
-                cover = ImageTexture.CreateFromImage(coverImage);
+                if (coverImage != null)
+                {
+                    cover = ImageTexture.CreateFromImage(coverImage);
+                    tint = Colors.White;
+                }
             }
         }
         catch (Exception exception)
@@ -300,7 +316,9 @@ public partial class MapCard : PanelContainer
             return;
 
         coverTexture.Texture = cover;
+        coverTexture.SelfModulate = tint;
         blurCoverTexture.Texture = cover;
+        blurCoverTexture.SelfModulate = tint;
     }
 
     private static Map getDownloadedMap(string hash)
